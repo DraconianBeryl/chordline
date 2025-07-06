@@ -1,6 +1,7 @@
 # Chordline
 
-**Chordline** is a modular narrative design and simulation framework, with support for branching storytelling, emotional modeling, and game system integration. It is built as an open-source Godot plugin providing both toolkit and runtime library.
+**Chordline** is a modular narrative design and simulation framework, with support for branching storytelling, emotional modeling, and game system integration.
+It is built as an open-source Godot plugin providing both toolkit and runtime library.
 
 ---
 ## Repository Structure
