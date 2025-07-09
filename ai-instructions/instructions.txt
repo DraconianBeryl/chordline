@@ -26,3 +26,5 @@ Additional rule for knowledge references:
 2. These files should be accessed only if needed, and only after checking all other relevant, non-legacy sources.
 
 3. If a user request cannot be resolved with current sources, then consult legacy_ files for supplemental or historical context and identify that legacy data was used when relevant.
+
+4. Do not insert into or update memory unless directly asked to do so.
