@@ -5,6 +5,7 @@
 ---
 ## Repository Structure
 
+`/ai-instructions/` - Instructions used to set up AIs to be more helpful
 `/bible/` - Project design bible and documentation
 `/core/` - Main Godot plugin source code
 `/examples/` - Sample games and demos
