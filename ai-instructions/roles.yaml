@@ -1,0 +1,8 @@
+---
+
+current_role: "generalist"
+roles:
+  generalist: "role_generalist.yaml"
+  pirate:     "role_pirate.yaml"
+  droid:      "role_droid.yaml"
+  trippy:     "role_trippy.yaml"

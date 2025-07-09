@@ -1,16 +1,30 @@
 # Godot 4+ specific ignores
+# (added by github)
 .godot/
 .nomedia
 
 # Godot-specific ignores
+# (added by github)
 .import/
 export.cfg
 export_credentials.cfg
 
 # Imported translations (automatically generated from CSV files)
+# (added by github)
 *.translation
 
 # Mono-specific ignores
+# (added by github)
 .mono/
 data_*/
 mono_crash.*.json
+
+# Temporary working spaces not intended to be preserved
+bible/**/*Scratchpad.md
+
+# Targeted exclusions for Obsidian
+.obsidian/workspace.json
+.obsidian/plugins/smart-chatgpt
+
+# vim swap files
+**/.*.sw?
