@@ -14,7 +14,9 @@ It is built as an open-source Godot plugin providing both toolkit and runtime li
 * `/tools/` - CLI tools or support scripts
 
  **Note on Documentation**
- This repository can be used as a [Markdown](https://daringfireball.net/projects/markdown/) vault compatible with [Obsidian](https://obsidian.md/). Obsidian is used for managing the design bible, internal documentation, and cross-linked development notes. You can browse the files directly, but using Obsidian enables rich linking, tag-based navigation, and embedded diagrams.
+ This repository can be used as a [Markdown](https://daringfireball.net/projects/markdown/) vault compatible with [Obsidian](https://obsidian.md/).
+ Obsidian is used for managing the design bible, internal documentation, and cross-linked development notes.
+ You can browse the files directly, but using Obsidian enables rich linking, tag-based navigation, and embedded diagrams.
 
 ## Official Plugins
 
