@@ -7,6 +7,9 @@ While there is a detailed model that's part of the Chordline project, its use it
 ### Representation
 Emotions in Chordline, whatever model they're in, are represented internally as a floating point number in the range \[0.0,1.0].
 Interfaces are typical scaled by a factor of 10 to map more naturally to scales that we use in day-to-day life.
+In order to support global performance enhancement via a C++ implementation plugin, all affects and compositions will be individual objects.
+An emotional model will take the form of an encapsulating class with a constructor that initializes everything in the model for a given feeler/target.
+Encapsulated objects are available for custom composition.
 ### Targeted and Context
 Emotions are used primarily in two ways: targeted and untargeted.
 Untargeted is describing the current state of the character.
@@ -23,6 +26,13 @@ They are intended for use both as Targets and Contexts.
 
 Examples of Targets include someone having a Love of Sweets, or CARE for Orphans.
 An example with both a Target and a Context would be having trust in someone else's ability as Trust with that person as the Target and their ability as the Context. 
+### Entity Interactions
+Each Emotion, including composite, has a hook point in the update logic that passes the Emotion identity, the current value, the requested delta, and the target of the emotion (if any) to the owning entity.
+(maybe also needs to pass the source of the delta? this implies that this is given (or at least can be given) when changes are requested)
+The Entity has a registry of functions associated with Emotions and/or Targets that it will then pass the information through.
+Each of these functions (if any) can modify the requested delta, which is then returned to the Emotion to be applied.
+The purpose of this is to allow for entity-specific saturation and/or desensitization for some or all Emotions, possibly only in some contexts.
+(not sure how this interacts with global default emotional interactions or cultural overlays, etc)
 ### Composability
 The emotions in all models are composable in the following ways:
 
@@ -94,17 +104,22 @@ The emotions in all models are composable in the following ways:
 	  $$\Delta_1=-\Delta_P(1-E_1)\quad\Delta_2=\Delta_PE_2$$
 	* Tension: A measure of how strongly the two are in conflict:
 	  $$tension=min(E_1,E_2)$$
+	* Tension Delta:
+	  Distributes requested delta, positive or negative, to both components based on slack using the Dyad formula.
+	  Effect on the value will usually be less than the requested delta.
+	  Effect on tension will usually be less than the requested delta.
 	* 
+
 * Inversion: One emotion inverted numerically.
 	* Formula:
 	  $$I=1-E$$
 	* Back-Propagation:
 	  $$\Delta_E=-\Delta_I$$
 	* 
-* Tension Pair: A dedicated object for the `tension` method from a Conflict Pair. Useful for making decisions. No back-propagation.
+* Tension Pair: A dedicated object for the `tension` method from a Conflict Pair. Useful for making decisions.
 	* Formula:
 	  $$T=min(E_1,E_2)$$
-	* 
+	* Back-Propagation following the Tension Delta method of a Conflict Pair (does not necessarily preserve requested delta)
 * Dominance: A diagnostic object that identifies the dominant emotion and by how much
 	* Imbalance:
 	  $$I_\Delta=abs(E_1-E_2)$$
@@ -140,12 +155,27 @@ The emotions in all models are composable in the following ways:
 	  $$S=s_1+s_2\quad r_1=\frac{s_1}{S}\quad r_2=\frac{s_2}{S}\quad \Delta_1=r_1\cdot\Delta_x\quad \Delta_2=r_2\cdot\Delta_x$$
 	  $$\Delta_x=\frac{-(E_1r_2+E_2r_1)+\sqrt{\left(E_1r_2+E_2r_1\right)^2-4\cdot r_1r_2\cdot\left(-2\Delta_R\cdot\sqrt{E_1E_2}-\Delta_R^2\right)}}{2\cdot r_1r_2}$$
 	* 
+* Conditional
+	* Constructed from a function and two affects
+	* effectively `f() ? A : B`
+	* Exposes value() of the object as its value
+	* Exposes the object that was selected()
+* 
 
 Back-propagation (general):
 
 * Where possible back-propagation is allowed through compositions, preserving the requested delta as much as possible.
 * Back-propagation is allowed only when all component parts allow modification/back-propagation AND no base emotion appears more than once recursively
 * 
+
+Read-Only:
+
+* A single-affect composition that acts like it accepts updates but will silently discard them.
+* All multi-affect compositions support having sources marked as read-only, causing them to behave that way within the composition object, but optimized.
+
+Local Buffer:
+
+* All multi-affect compositions can have any of the components designated as a local buffer (with an initial value), which behaves the same as a simple affect without having to create the anonymous object.
 
 Sink Emotions:
 
@@ -157,6 +187,66 @@ Metrics as Emotions:
 * Some (all?) of the methods/metrics on the above are available as dedicated objects (e.g. Tension) that can themselves be used in compositions.
 * 
 
+Observer/Notification Patterns:
+
+* All Affects can be observed to be notified about changes.
+* The first call into the system will set the base change ID, all propagations will add qualifiers to it
+* Propagation path is part of the event
+* Observation of a composite will cause it to observe its components
+* Start value, final value, and delta will be explicit data in the event
+* Timestamps, both wall-clock and simulation, will be in the event
+* Multiple granularity levels, not all will apply to all objects:
+	* Global
+	* Affect Owner
+	* Affect Target (implies target knows who is feeling about them, which wasn't previously an explicit expectation)
+	* Individual Affect
+### Possible Gatekeeping Patterns
+
+* Security gating PLAY / Joy
+* Shame/Fear/Stress Suppressing Expression of Anger or LUST
+* CARE Inhibiting or Overriding Disgust or Anger
+* Empathy Biasing Expressive Output
+* Fatigue / Pain Blocking PLAY / SEEKING
+* Model-Based Mismatch Filtering - High Surprise or Low Anticipation may prevent the internal model from accepting or escalating other emotions.
+* Social Modulation Gate
+* Threshold Activation Gate
+* Inhibition by Competition - One emotion is not allowed to increase if another mutually exclusive state is active
+### Deferred to Plugins
+
+* Sustained Pressure - Plugin applies recurring deltas while source is high (plus reasonable variations)
+* Threshold Triggers - Porcelain objects using the observer hooks core feature (triggers an arbitrary event, watch out for flapping)
+* Periodic Stabilized Coupling - Mutual reduction in conflicting emotions. Core method with automatic periodic invocation via plugin
+* Delayed Onset Influence - Plugin tracks duration above/below threshold (and then triggers an arbitrary event)
+* Decay-Weighted Echo Influence - Requires tracking past peaks or smoothing history (a spike in A triggers a delta in B that then decays over time)
+* Bidirectional Influence - can be constructed using others, especially threshold triggers, sustained pressure, etc. using a chain of events
+* Resource-Based Suppression
+	* Dynamic Ceiling - The maximum allowed value of affect B is reduced based on A
+	* Delta Inhibition - Inputs that would normally raise B have their magnitude reduced based on A
+	* Absolute Lockout - With A above a certain threshold, B cannot be increased at all
+* Separate Mood from Baseline, with automatic adjustment between them
+	* Note that composites don't decay (towards baseline); they reflect the changes caused by the decay of their bases.
+* Affect Decay - A scalar affective element naturally diminishes in value over time if not reinforced
+	* "His anger faded over the next few hours."
+	* Common in short-lived emotions like Fear, Surprise, Embarrassment
+* Affect Inertia / Persistence - An element maintains its value unless actively countered - resistance to decay
+	* "She doesn't let go of things easily."
+	* Strong in Sorrow, CARE, Stress, chronic Pain
+	* May be scalar: decay coefficient less than 1.0
+* Decay Acceleration / Compression - Decay rate increases over time or under specific conditions.
+	* "Once she started to calm down, it passed quickly."
+	* Fear, Surprise, Panic -> fast dropoff after peak
+* Oscillation / Rhythmic Regulation - Affect naturally cycles, either due to internal rhythm or contextual reset.
+	* "He always has ups and downs."
+	* Mood swings, fatigue/recover loops, some CARE/LUST expressions
+* Rebound Effects - A rapid or extreme drop in one affect causes a compensatory rise in another.
+	* "After the fear subsided, she became euphoric." ("WE SURVIVED!")
+	* Often modeled in mood disorders; can create dramatic whiplash moments
+* Affective Incompatibility (Simultaneity Exclusion) - Some Affective Elements are conceptually or biologically unlikely to co-occur at high intensity.
+* Valence Opposition - Elements at opposite ends of the circumplex naturally attenuate one another.
+* Homeostatic Reprioritization - Strong signals from one homeostatic axis suppress others to conserve attention or energy
+* Resource Competition - Two Affective Elements compete for the same attentional or expressive bandwidth
+* Decay-Inhibiting Conflict - One affect's presence slows or halts the natural decay of another
+* 
 ### Valence/Activation Values
 Each base emotion may be associated with either
 
