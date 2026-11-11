@@ -2,5 +2,6 @@
 
 current_role: "generalist"
 roles:
+  designer: "role_designer.yaml"
   generalist: "role_generalist.yaml"
   transcript_curator: "role_transcript_curator.yaml"
